@@ -4,12 +4,17 @@ use self::glfw::{Context, Key, Action};
 extern crate gl;
 use self::gl::types::*;
 
+// Huh, so mod is sorta like #include...
+mod common;
+mod shader;
+
 use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
 use std::ffi::CStr;
 
 // use common::{process_events, processInput};
+use shader::Shader;
 
 extern crate image;
 use image::GenericImage;
