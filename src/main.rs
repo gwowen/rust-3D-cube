@@ -11,20 +11,21 @@ mod common;
 mod shader;
 mod macros;
 
+use std::sync::mpsc::Receiver;
 use std::ptr;
 use std::mem;
 use std::os::raw::c_void;
 use std::path::Path;
-use std::ffi::{CString, CStr};
+use std::ffi::CStr;
 
 use shader::Shader;
 
 extern crate image;
 use image::GenericImageView;
-use image::DynamicImage::*;
+
 
 extern crate cgmath;
-use cgmath::{Matrix4, Vector3, vec3, Deg, Rad, perspective, Point3};
+use cgmath::{Matrix4, vec3, Deg, Rad, perspective};
 use cgmath::prelude::*;
 
 // settings 
@@ -38,12 +39,10 @@ fn main() {
 
     let (mut window, events) = glfw.create_window(SCR_WIDTH, SCR_HEIGHT, "Rust rotating cube!", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
-    
-    let mut deltaTime: f32;
-    let mut lastFrame: f32 = 0.0;
 
-    window.set_key_polling(true);
     window.make_current();
+    window.set_key_polling(true);
+    window.set_framebuffer_size_polling(true);
 
     gl::load_with(|symbol| window.get_proc_address(symbol) as *const _);
 
@@ -131,7 +130,7 @@ fn main() {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
         // load image, create texture and generate mipmaps
-        let img = image::open(&Path::new("../../resources/textures/container.jpg")).expect("Failed to load texture");
+        let img = image::open(&Path::new("../../resources/container.jpg")).expect("Failed to load texture");
         let data = img.raw_pixels();
         gl::TexImage2D(gl::TEXTURE_2D,
                        0,
@@ -152,7 +151,7 @@ fn main() {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
         // load image, create texture and generate mipmaps
-        let img = image::open(&Path::new("../../resources/textures/awesomeface.png")).expect("Failed to load texture");
+        let img = image::open(&Path::new("../../resources/awesomeface.png")).expect("Failed to load texture");
         let img = img.flipv();
         let data = img.raw_pixels();
         gl::TexImage2D(gl::TEXTURE_2D,
@@ -168,17 +167,14 @@ fn main() {
 
         ourShader.useProgram();
         ourShader.setInt(c_str!("texture1"), 0);
-        ourShader.setInt(c_str!("texture2"), 0);
+        ourShader.setInt(c_str!("texture2"), 1);
 
         (ourShader, VBO, VAO, texture1, texture2)
     };
 
     while !window.should_close() {
 
-        let currentFrame = glfw.get_time() as f32;
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-        
+        process_events(&mut window, &events);
 
         unsafe {
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);
@@ -194,9 +190,10 @@ fn main() {
             // create transformations
             // also, the equivalent of glm::rotate requires a normalized vector. Bit different
             // from what I'm used to but it will adapt to service us :)
-            let model: Matrix4<f32>= Matrix4::from_axis_angle(vec3(0.5, 1.0, 0.0).normalize(), Rad(currentFrame));
-            let view: Matrix4<f32> = Matrix4::from_translation(vec3(0.0, 0.0, -3.0));
-            let projection: Matrix4<f32> = perspective(Rad(45.0), SCR_WIDTH as f32 / SCR_HEIGHT as f32, 0.1, 100.0);
+            let model: Matrix4<f32>= Matrix4::from_axis_angle(vec3(0.5, 1.0, 0.0).normalize(), 
+                                                              Rad(glfw.get_time() as f32));
+            let view: Matrix4<f32> = Matrix4::from_translation(vec3(0., 0., -3.));
+            let projection: Matrix4<f32> = perspective(Deg(45.0), SCR_WIDTH as f32 / SCR_HEIGHT as f32, 0.1, 100.0);
             // matrix uniform locations
             let modelLoc = gl::GetUniformLocation(ourShader.ID, c_str!("model").as_ptr());
             let viewLoc = gl::GetUniformLocation(ourShader.ID, c_str!("view").as_ptr());
@@ -211,13 +208,10 @@ fn main() {
             gl::BindVertexArray(VAO);
             gl::DrawArrays(gl::TRIANGLES, 0, 36);
 
-        };
+        }
+
         window.swap_buffers();
         glfw.poll_events();
-
-        for (_, event) in glfw::flush_messages(&events) {
-            handle_window_event(&mut window, event);
-        }
 
         unsafe {
             gl::DeleteVertexArrays(1, &VAO);
@@ -226,11 +220,14 @@ fn main() {
     }
 }
 
-fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
-    match event {
-        glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
-            window.set_should_close(true)
+fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::WindowEvent)>) {
+    for (_, event) in glfw::flush_messages(&events) {
+        match event {
+            glfw::WindowEvent::FramebufferSize(width, height) => {
+                    unsafe {gl::Viewport(0, 0, width, height)}
+            }
+            glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
+            _ => {}
         }
-        _ => {}
     }
 }
