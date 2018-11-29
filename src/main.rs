@@ -123,6 +123,7 @@ fn main() {
 
         // texture 1
         gl::GenTextures(1, &mut texture1);
+        gl::BindTexture(gl::TEXTURE_2D, texture1);
         //texture wrapping parameters
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
@@ -144,6 +145,7 @@ fn main() {
         gl::GenerateMipmap(gl::TEXTURE_2D);
         // texture 2
         gl::GenTextures(1, &mut texture2);
+        gl::BindTexture(gl::TEXTURE_2D, texture2);
         //texture wrapping parameters
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
@@ -160,7 +162,7 @@ fn main() {
                        img.width() as i32,
                        img.height() as i32,
                        0, 
-                       gl::RGB,
+                       gl::RGBA,
                        gl::UNSIGNED_BYTE,
                        &data[0] as *const u8 as *const c_void);
         gl::GenerateMipmap(gl::TEXTURE_2D);
@@ -212,13 +214,15 @@ fn main() {
 
         window.swap_buffers();
         glfw.poll_events();
-
-        unsafe {
-            gl::DeleteVertexArrays(1, &VAO);
-            gl::DeleteBuffers(1, &VBO);
-        }
     }
+
+    unsafe {
+        gl::DeleteVertexArrays(1, &VAO);
+        gl::DeleteBuffers(1, &VBO);
+    }
+
 }
+
 
 fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::WindowEvent)>) {
     for (_, event) in glfw::flush_messages(&events) {
