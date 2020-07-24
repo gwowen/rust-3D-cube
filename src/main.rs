@@ -49,9 +49,12 @@ fn main() {
     let (ourShader, VBO, VAO, texture1, texture2) = unsafe {
         gl::Enable(gl::DEPTH_TEST);
 
+        // lol... looks like rust changed how it seeks files since
+        // I last looked at this ages ago... now in the same directory as 
+        // the cargo.toml file! 
         let ourShader = Shader::new(
-            "../../src/vertshader.glsl",
-            "../../src/fragshader.glsl"
+            "resources/shaders/vertshader.glsl",
+            "resources/shaders/fragshader.glsl"
         );
 
         let vertices: [f32; 180] = [
@@ -131,7 +134,7 @@ fn main() {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
         // load image, create texture and generate mipmaps
-        let img = image::open(&Path::new("../../resources/container.jpg")).expect("Failed to load texture");
+        let img = image::open(&Path::new("resources/container.jpg")).expect("Failed to load texture");
         let data = img.raw_pixels();
         gl::TexImage2D(gl::TEXTURE_2D,
                        0,
@@ -153,7 +156,7 @@ fn main() {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
         // load image, create texture and generate mipmaps
-        let img = image::open(&Path::new("../../resources/awesomeface.png")).expect("Failed to load texture");
+        let img = image::open(&Path::new("resources/awesomeface.png")).expect("Failed to load texture");
         let img = img.flipv();
         let data = img.raw_pixels();
         gl::TexImage2D(gl::TEXTURE_2D,
