@@ -2,6 +2,7 @@
 use std::ffi::{CString, CStr};
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 use std::ptr;
 use std::str;
 
@@ -17,13 +18,21 @@ pub struct Shader {
 
 #[allow(dead_code)]
 impl Shader {
-    pub fn new(vertexPath: &str, fragmentPath: &str) -> Shader {
+    pub fn new(vertexPathString: &str, fragmentPathString: &str) -> Shader {
         // load shaders
         let mut shader = Shader { ID: 0};
-        let mut vShaderFile = File::open(vertexPath)
-        .unwrap_or_else(|_| panic!("Failed to open {}", vertexPath));
-        let mut fShaderFile = File::open(fragmentPath)
-        .unwrap_or_else(|_| panic!("Failed to open {}", fragmentPath));
+        let vertexPath = Path::new(vertexPathString);
+        let fragmentPath = Path::new(fragmentPathString);
+        
+        let mut vShaderFile = match File::open(vertexPath) {
+            Err(why) => panic!("Couldn't open vertex shader file, path {} : {}", vertexPath.display(), why),
+            Ok(vShaderFile) => vShaderFile,
+        };
+        let mut fShaderFile = match File::open(fragmentPath) {
+            Err(why) => panic!("Couldn't open fragment shaderfile path {} : {}", fragmentPath.display(), why),
+            Ok(fShaderFile) => fShaderFile,
+        };
+
         let mut vertexCode = String::new();
         let mut fragmentCode = String::new();
         vShaderFile
